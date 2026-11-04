@@ -5,8 +5,8 @@ nodeRoleName: ""
 capacityTypes:
   - on-demand
 
-instanceCategories: [t, m, c]
-instanceSizes: [medium, large, xlarge]
+# The organization's SCP only allows instance sizes up to medium.
+instanceTypes: [t3.medium, t3a.medium]
 
 limits:
   cpu: "16"
