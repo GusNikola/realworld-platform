@@ -13,5 +13,9 @@ module "network" {
   app_subnet_cidrs    = ["10.20.16.0/20", "10.20.32.0/20"]
   data_subnet_cidrs   = ["10.20.200.0/24", "10.20.201.0/24"]
 
+  app_subnet_tags = {
+    "karpenter.sh/discovery" = local.name
+  }
+
   single_nat_gateway = true
 }
