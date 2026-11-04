@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euo pipefail
+
+dnf install -y git unzip tar gzip jq libicu
+
+useradd --create-home --shell /bin/bash runner
+
+RUNNER_DIR=/home/runner/actions-runner
+mkdir -p "$RUNNER_DIR"
+cd "$RUNNER_DIR"
+
+curl -fsSL -o runner.tar.gz \
+  "https://github.com/actions/runner/releases/download/v${runner_version}/actions-runner-linux-x64-${runner_version}.tar.gz"
+echo "${runner_sha256}  runner.tar.gz" | sha256sum -c -
+tar xzf runner.tar.gz
+rm runner.tar.gz
+chown -R runner:runner /home/runner
+
+# The runner is registered manually over SSM with a short-lived token, so no token ends up in code or state.

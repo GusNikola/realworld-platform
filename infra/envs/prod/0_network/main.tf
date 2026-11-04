@@ -4,14 +4,17 @@ locals {
 
 data "aws_caller_identity" "current" {}
 
-# Only allow reading this environment's secrets through the endpoint.
+# Only allow reading this environment's secrets and the RDS-managed master secret through the endpoint.
 data "aws_iam_policy_document" "secretsmanager_endpoint" {
   statement {
     actions = [
       "secretsmanager:GetSecretValue",
       "secretsmanager:DescribeSecret",
     ]
-    resources = ["arn:aws:secretsmanager:us-east-1:${data.aws_caller_identity.current.account_id}:secret:${local.name}/*"]
+    resources = [
+      "arn:aws:secretsmanager:us-east-1:${data.aws_caller_identity.current.account_id}:secret:${local.name}/*",
+      "arn:aws:secretsmanager:us-east-1:${data.aws_caller_identity.current.account_id}:secret:rds!db-*",
+    ]
 
     principals {
       type        = "*"
@@ -36,6 +39,10 @@ module "network" {
   public_subnet_cidrs = ["10.10.0.0/24", "10.10.1.0/24"]
   app_subnet_cidrs    = ["10.10.16.0/20", "10.10.32.0/20"]
   data_subnet_cidrs   = ["10.10.200.0/24", "10.10.201.0/24"]
+
+  app_subnet_tags = {
+    "karpenter.sh/discovery" = local.name
+  }
 
   single_nat_gateway = false
 
