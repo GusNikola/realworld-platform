@@ -70,6 +70,10 @@ output "argocd_admin_secret_name" {
   value = aws_secretsmanager_secret.argocd_admin.name
 }
 
+output "argocd_admin_bcrypt_secret_name" {
+  value = aws_secretsmanager_secret.argocd_admin_bcrypt.name
+}
+
 output "grafana_admin_secret_name" {
   value = aws_secretsmanager_secret.grafana_admin.name
 }

@@ -9,9 +9,3 @@ variable "gitops_revision" {
   type        = string
   default     = "main"
 }
-
-variable "argocd_admin_password_version" {
-  description = "Bump after rotating the argocd-admin secret in 1_infra to push the new password to ArgoCD."
-  type        = number
-  default     = 1
-}
