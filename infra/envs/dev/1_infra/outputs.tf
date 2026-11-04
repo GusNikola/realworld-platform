@@ -1,3 +1,7 @@
+output "vpc_id" {
+  value = local.network.vpc_id
+}
+
 output "cluster_name" {
   value = module.eks.cluster_name
 }
@@ -60,6 +64,22 @@ output "rds_master_user_secret_arn" {
 
 output "backend_secret_name" {
   value = aws_secretsmanager_secret.backend.name
+}
+
+output "argocd_admin_secret_name" {
+  value = aws_secretsmanager_secret.argocd_admin.name
+}
+
+output "grafana_admin_secret_name" {
+  value = aws_secretsmanager_secret.grafana_admin.name
+}
+
+output "waf_web_acl_arn" {
+  value = module.waf.web_acl_arn
+}
+
+output "waf_web_acl_name" {
+  value = module.waf.web_acl_name
 }
 
 output "loki_bucket" {
