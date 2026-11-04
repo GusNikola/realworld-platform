@@ -1,0 +1,91 @@
+# Gateway API (standard channel) and AWS Load Balancer Controller gateway CRDs,
+# vendored from pinned releases: gateway-api v1.6.0, aws-load-balancer-controller v3.6.2.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: gateway-api-crds
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            argocd.argoproj.io/secret-type: cluster
+  template:
+    metadata:
+      name: gateway-api-crds
+      annotations:
+        argocd.argoproj.io/sync-wave: "-3"
+    spec:
+      project: default
+      source:
+        repoURL: "{{ .metadata.annotations.gitops_repo_url }}"
+        targetRevision: "{{ .metadata.annotations.gitops_revision }}"
+        path: gitops/platform/gateway-api/crds
+      destination:
+        server: "{{ .server }}"
+      syncPolicy:
+        automated:
+          prune: false
+          selfHeal: true
+        syncOptions:
+          - ServerSideApply=true
+        retry:
+          limit: 10
+          backoff:
+            duration: 15s
+            factor: 2
+            maxDuration: 5m
+---
+# Public Gateway: one internet-facing ALB with the wildcard ACM certificate and the WAF web ACL.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: gateway
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            argocd.argoproj.io/secret-type: cluster
+  template:
+    metadata:
+      name: gateway
+      annotations:
+        argocd.argoproj.io/sync-wave: "-1"
+    spec:
+      project: default
+      sources:
+        - repoURL: "{{ .metadata.annotations.gitops_repo_url }}"
+          targetRevision: "{{ .metadata.annotations.gitops_revision }}"
+          path: gitops/platform/gateway-api/config
+          helm:
+            releaseName: gateway
+            valueFiles:
+              - values.yaml
+              - values-{{ .metadata.labels.environment }}.yaml
+            valuesObject:
+              certificateArn: "{{ .metadata.annotations.acm_certificate_arn }}"
+              webAclArn: "{{ .metadata.annotations.waf_web_acl_arn }}"
+      destination:
+        server: "{{ .server }}"
+        namespace: gateway
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+          - SkipDryRunOnMissingResource=true
+        retry:
+          limit: 10
+          backoff:
+            duration: 15s
+            factor: 2
+            maxDuration: 5m

@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    {{- include "realworld.labels" "backend" | nindent 4 }}
+  annotations:
+    # Restart when realworld-backend changes (RDS password rotation, key rotation).
+    reloader.stakater.com/auto: "true"
+spec:
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: backend
+  template:
+    metadata:
+      labels:
+        {{- include "realworld.labels" "backend" | nindent 8 }}
+    spec:
+      securityContext:
+        {{- include "realworld.podSecurityContext" . | nindent 8 }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: backend
+      containers:
+        - name: backend
+          image: {{ include "realworld.image" (list . "backend") }}
+          # Bypass the image entrypoint, which runs migrations on every start;
+          # migrations run once per sync in the backend-migrate Job instead.
+          command: ["uvicorn", "conduit.app:app", "--host", "0.0.0.0", "--port", "{{ .Values.backend.port }}"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.backend.port }}
+          env:
+            {{- include "realworld.backendEnv" . | nindent 12 }}
+          envFrom:
+            - secretRef:
+                name: realworld-backend
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.backend.healthPath }}
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.backend.healthPath }}
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          securityContext:
+            {{- include "realworld.containerSecurityContext" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    {{- include "realworld.labels" "backend" | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: backend
+  ports:
+    - name: http
+      port: {{ .Values.backend.port }}
+      targetPort: http

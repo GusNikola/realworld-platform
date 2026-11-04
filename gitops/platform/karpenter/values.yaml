@@ -1,0 +1,18 @@
+replicas: 2
+
+serviceAccount:
+  create: true
+  name: karpenter
+
+# Run next to the other platform components; the chart already tolerates CriticalAddonsOnly.
+nodeSelector:
+  kubernetes.io/os: linux
+  eks.amazonaws.com/nodegroup: system
+
+controller:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi

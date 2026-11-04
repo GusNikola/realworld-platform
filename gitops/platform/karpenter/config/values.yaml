@@ -1,0 +1,14 @@
+# clusterName and nodeRoleName come from the ArgoCD cluster secret annotations.
+clusterName: ""
+nodeRoleName: ""
+
+capacityTypes:
+  - on-demand
+
+instanceCategories: [t, m, c]
+instanceSizes: [medium, large, xlarge]
+
+limits:
+  cpu: "16"
+
+rootVolumeSize: 20Gi

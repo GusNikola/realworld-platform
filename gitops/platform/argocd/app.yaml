@@ -1,0 +1,49 @@
+# Public HTTPRoute for the ArgoCD UI (ArgoCD itself is installed by Terraform in 2_platform).
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: argocd-route
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            argocd.argoproj.io/secret-type: cluster
+  template:
+    metadata:
+      name: argocd-route
+      annotations:
+        argocd.argoproj.io/sync-wave: "0"
+    spec:
+      project: default
+      sources:
+        - repoURL: "{{ .metadata.annotations.gitops_repo_url }}"
+          targetRevision: "{{ .metadata.annotations.gitops_revision }}"
+          path: gitops/platform/argocd/config
+          helm:
+            releaseName: argocd-route
+            valueFiles:
+              - values.yaml
+              - values-{{ .metadata.labels.environment }}.yaml
+            valuesObject:
+              host: "{{ .metadata.annotations.argocd_host }}"
+      destination:
+        server: "{{ .server }}"
+        namespace: argocd
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+          - SkipDryRunOnMissingResource=true
+        retry:
+          limit: 10
+          backoff:
+            duration: 15s
+            factor: 2
+            maxDuration: 5m

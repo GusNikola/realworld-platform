@@ -1,0 +1,2 @@
+# host comes from the ArgoCD cluster secret annotations.
+host: ""

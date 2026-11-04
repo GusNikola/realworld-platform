@@ -1,0 +1,6 @@
+# Development overrides: prefer spot, fall back to on-demand.
+capacityTypes:
+  - spot
+  - on-demand
+limits:
+  cpu: "8"

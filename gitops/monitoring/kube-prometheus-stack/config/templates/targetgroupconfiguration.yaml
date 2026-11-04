@@ -1,0 +1,12 @@
+apiVersion: gateway.k8s.aws/v1
+kind: TargetGroupConfiguration
+metadata:
+  name: grafana
+spec:
+  targetReference:
+    name: kube-prometheus-stack-grafana
+  defaultConfiguration:
+    targetType: ip
+    healthCheckConfig:
+      healthCheckPath: /api/health
+      healthCheckProtocol: HTTP

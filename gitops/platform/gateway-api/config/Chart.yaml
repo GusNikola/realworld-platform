@@ -1,0 +1,5 @@
+apiVersion: v2
+name: gateway
+description: GatewayClass, Gateway and LoadBalancerConfiguration for the public ALB.
+type: application
+version: 0.1.0

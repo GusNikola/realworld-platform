@@ -1,0 +1,14 @@
+installCRDs: true
+
+serviceAccount:
+  create: true
+  name: external-secrets
+
+global:
+  nodeSelector:
+    eks.amazonaws.com/nodegroup: system
+  tolerations:
+    - key: CriticalAddonsOnly
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
