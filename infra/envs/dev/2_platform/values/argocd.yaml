@@ -12,6 +12,9 @@ configs:
   params:
     # TLS is terminated on the ALB.
     server.insecure: true
+    # Diff against the server-side applied result, so fields defaulted by the API
+    # server (e.g. on Gateway API routes) do not show as drift.
+    controller.diff.server.side: true
   cm:
     admin.enabled: true
     # Report the real health of child Applications, so sync waves in the
