@@ -1,0 +1,61 @@
+# Prometheus, Alertmanager and Grafana (with default Kubernetes dashboards and Loki as a datasource).
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            argocd.argoproj.io/secret-type: cluster
+  template:
+    metadata:
+      name: kube-prometheus-stack
+      annotations:
+        argocd.argoproj.io/sync-wave: "0"
+    spec:
+      project: default
+      sources:
+        - repoURL: https://prometheus-community.github.io/helm-charts
+          chart: kube-prometheus-stack
+          targetRevision: 92.17.1
+          helm:
+            releaseName: kube-prometheus-stack
+            valueFiles:
+              - $values/gitops/monitoring/kube-prometheus-stack/values.yaml
+              - $values/gitops/monitoring/kube-prometheus-stack/values-{{ .metadata.labels.environment }}.yaml
+        - repoURL: "{{ .metadata.annotations.gitops_repo_url }}"
+          targetRevision: "{{ .metadata.annotations.gitops_revision }}"
+          ref: values
+        - repoURL: "{{ .metadata.annotations.gitops_repo_url }}"
+          targetRevision: "{{ .metadata.annotations.gitops_revision }}"
+          path: gitops/monitoring/kube-prometheus-stack/config
+          helm:
+            releaseName: kube-prometheus-stack-config
+            valueFiles:
+              - values.yaml
+              - values-{{ .metadata.labels.environment }}.yaml
+            valuesObject:
+              grafanaHost: "{{ .metadata.annotations.grafana_host }}"
+              grafanaAdminSecretName: "{{ .metadata.annotations.grafana_admin_secret_name }}"
+      destination:
+        server: "{{ .server }}"
+        namespace: monitoring
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+          - SkipDryRunOnMissingResource=true
+        retry:
+          limit: 10
+          backoff:
+            duration: 15s
+            factor: 2
+            maxDuration: 5m

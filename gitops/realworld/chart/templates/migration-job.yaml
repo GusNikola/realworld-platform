@@ -1,0 +1,40 @@
+# Runs database migrations once per sync, before the new backend pods roll out.
+# A failed migration stops the sync, so the previous pods keep serving.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backend-migrate
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+  labels:
+    {{- include "realworld.labels" "backend-migrate" | nindent 4 }}
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 600
+  template:
+    metadata:
+      labels:
+        {{- include "realworld.labels" "backend-migrate" | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      securityContext:
+        {{- include "realworld.podSecurityContext" . | nindent 8 }}
+      containers:
+        - name: migrate
+          image: {{ include "realworld.image" (list . "backend") }}
+          command: ["python", "-m", "alembic", "-c", "alembic.ini", "upgrade", "head"]
+          env:
+            {{- include "realworld.backendEnv" . | nindent 12 }}
+          envFrom:
+            - secretRef:
+                name: realworld-backend
+          securityContext:
+            {{- include "realworld.containerSecurityContext" . | nindent 12 }}
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi

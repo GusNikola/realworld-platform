@@ -47,3 +47,9 @@ resource "aws_vpc_security_group_ingress_rule" "ops_host_to_cluster" {
   to_port                      = 443
   referenced_security_group_id = module.ops_host.security_group_id
 }
+
+module "waf" {
+  source = "../../../modules/waf"
+
+  name = local.name
+}

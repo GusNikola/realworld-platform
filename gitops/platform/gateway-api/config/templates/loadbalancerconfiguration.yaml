@@ -1,0 +1,12 @@
+apiVersion: gateway.k8s.aws/v1
+kind: LoadBalancerConfiguration
+metadata:
+  name: public
+spec:
+  scheme: internet-facing
+  listenerConfigurations:
+    - protocolPort: HTTPS:443
+      defaultCertificate: {{ required "certificateArn is required" .Values.certificateArn }}
+      sslPolicy: {{ .Values.sslPolicy }}
+  wafV2:
+    webACL: {{ required "webAclArn is required" .Values.webAclArn }}

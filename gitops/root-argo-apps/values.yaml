@@ -1,0 +1,3 @@
+# Set by Terraform (2_platform) through the root Application.
+repoURL: https://github.com/GusNikola/realworld-platform.git
+targetRevision: main

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: root-argo-apps
+description: App-of-apps root; one Application per category (platform, monitoring, logging, realworld).
+type: application
+version: 0.1.0

@@ -1,0 +1,10 @@
+reloader:
+  watchGlobally: true
+  deployment:
+    nodeSelector:
+      eks.amazonaws.com/nodegroup: system
+    tolerations:
+      - key: CriticalAddonsOnly
+        operator: Equal
+        value: "true"
+        effect: NoSchedule

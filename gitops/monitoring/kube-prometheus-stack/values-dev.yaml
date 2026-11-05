@@ -1,0 +1,10 @@
+# Development overrides.
+prometheus:
+  prometheusSpec:
+    retention: 3d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          resources:
+            requests:
+              storage: 10Gi

@@ -1,0 +1,60 @@
+# RealWorld application. CI only changes image tags in values-<env>.yaml.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: realworld-app
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            argocd.argoproj.io/secret-type: cluster
+  template:
+    metadata:
+      name: realworld-app
+      annotations:
+        argocd.argoproj.io/sync-wave: "1"
+    spec:
+      project: default
+      sources:
+        - repoURL: "{{ .metadata.annotations.gitops_repo_url }}"
+          targetRevision: "{{ .metadata.annotations.gitops_revision }}"
+          path: gitops/realworld/chart
+          helm:
+            releaseName: realworld
+            valueFiles:
+              - $values/gitops/realworld/values-{{ .metadata.labels.environment }}.yaml
+            valuesObject:
+              environment: "{{ .metadata.labels.environment }}"
+              registry: "{{ .metadata.annotations.ecr_registry }}"
+              host: "{{ .metadata.annotations.app_host }}"
+              postgres:
+                host: "{{ .metadata.annotations.rds_address }}"
+                port: "{{ .metadata.annotations.rds_port }}"
+                db: "{{ .metadata.annotations.rds_db_name }}"
+              secrets:
+                backend: "{{ .metadata.annotations.backend_secret_name }}"
+                rds: "{{ .metadata.annotations.rds_secret_arn }}"
+        - repoURL: "{{ .metadata.annotations.gitops_repo_url }}"
+          targetRevision: "{{ .metadata.annotations.gitops_revision }}"
+          ref: values
+      destination:
+        server: "{{ .server }}"
+        namespace: realworld
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+          - SkipDryRunOnMissingResource=true
+        retry:
+          limit: 10
+          backoff:
+            duration: 15s
+            factor: 2
+            maxDuration: 5m

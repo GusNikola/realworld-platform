@@ -1,0 +1,45 @@
+# Set from the ArgoCD cluster secret annotations by the ApplicationSet.
+environment: ""
+registry: ""
+host: ""
+postgres:
+  host: ""
+  port: "5432"
+  db: ""
+secrets:
+  # Secrets Manager secret with JWT_SECRET_KEY and SECRET_KEY (1_infra).
+  backend: ""
+  # RDS managed master user secret (username, password), rotated by RDS.
+  rds: ""
+
+backend:
+  image:
+    tag: ""
+  port: 8080
+  healthPath: /api/health-check
+  autoscaling:
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilization: 70
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+frontend:
+  image:
+    tag: ""
+  port: 80
+  healthPath: /
+  autoscaling:
+    minReplicas: 2
+    maxReplicas: 3
+    targetCPUUtilization: 70
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi

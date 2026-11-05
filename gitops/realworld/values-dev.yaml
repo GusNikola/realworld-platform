@@ -1,0 +1,13 @@
+# Image tags deployed to dev. Updated by CI.
+backend:
+  image:
+    tag: ""
+  autoscaling:
+    minReplicas: 1
+    maxReplicas: 2
+frontend:
+  image:
+    tag: ""
+  autoscaling:
+    minReplicas: 1
+    maxReplicas: 2

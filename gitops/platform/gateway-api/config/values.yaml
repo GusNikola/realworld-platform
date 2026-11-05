@@ -1,0 +1,4 @@
+# certificateArn and webAclArn come from the ArgoCD cluster secret annotations.
+certificateArn: ""
+webAclArn: ""
+sslPolicy: ELBSecurityPolicy-TLS13-1-2-2021-06

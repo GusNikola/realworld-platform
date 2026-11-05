@@ -53,6 +53,7 @@ data "aws_iam_policy_document" "external_secrets" {
     ]
     resources = [
       aws_secretsmanager_secret.backend.arn,
+      aws_secretsmanager_secret.grafana_admin.arn,
       module.rds.master_user_secret_arn,
     ]
   }
@@ -87,7 +88,7 @@ module "irsa_loki" {
   name              = "${local.name}-loki"
   oidc_provider_arn = local.irsa.oidc_provider_arn
   oidc_issuer       = local.irsa.oidc_issuer
-  namespace         = "monitoring"
+  namespace         = "logging"
   service_account   = "loki"
   policy_json       = data.aws_iam_policy_document.loki.json
 }

@@ -1,0 +1,46 @@
+global:
+  # Platform components run on the tainted system node group.
+  nodeSelector:
+    eks.amazonaws.com/nodegroup: system
+  tolerations:
+    - key: CriticalAddonsOnly
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+
+configs:
+  params:
+    # TLS is terminated on the ALB.
+    server.insecure: true
+    # Diff against the server-side applied result, so fields defaulted by the API
+    # server (e.g. on Gateway API routes) do not show as drift.
+    controller.diff.server.side: true
+  cm:
+    admin.enabled: true
+    # Report the real health of child Applications, so sync waves in the
+    # app-of-apps wait for each category to become healthy.
+    resource.customizations.health.argoproj.io_Application: |
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil and obj.status.health ~= nil then
+        hs.status = obj.status.health.status
+        if obj.status.health.message ~= nil then
+          hs.message = obj.status.health.message
+        end
+      end
+      return hs
+
+  # Karpenter chart is published only to a public OCI registry.
+  repositories:
+    karpenter:
+      name: karpenter
+      type: helm
+      url: public.ecr.aws/karpenter
+      enableOCI: "true"
+
+dex:
+  enabled: false
+
+notifications:
+  enabled: false
