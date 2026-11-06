@@ -27,8 +27,8 @@ data "aws_iam_policy_document" "terraform_plan_trust" {
       test     = "StringEquals"
       variable = "${local.github_oidc_url}:sub"
       values = [
-        "repo:${var.github_owner}/${var.platform_repo}:pull_request",
-        "repo:${var.github_owner}/${var.platform_repo}:ref:refs/heads/main",
+        "${local.github_subject[var.platform_repo]}:pull_request",
+        "${local.github_subject[var.platform_repo]}:ref:refs/heads/main",
       ]
     }
   }
@@ -97,7 +97,7 @@ data "aws_iam_policy_document" "terraform_apply_trust" {
       variable = "${local.github_oidc_url}:sub"
       values = [
         for env in var.terraform_apply_environments :
-        "repo:${var.github_owner}/${var.platform_repo}:environment:${env}"
+        "${local.github_subject[var.platform_repo]}:environment:${env}"
       ]
     }
   }
@@ -140,7 +140,7 @@ data "aws_iam_policy_document" "ecr_push_trust" {
       values = flatten([
         for repo in var.app_repos : [
           for branch in var.ecr_push_branches :
-          "repo:${var.github_owner}/${repo}:ref:refs/heads/${branch}"
+          "${local.github_subject[repo]}:ref:refs/heads/${branch}"
         ]
       ])
     }

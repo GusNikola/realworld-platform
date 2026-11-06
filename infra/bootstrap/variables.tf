@@ -20,6 +20,22 @@ variable "github_owner" {
   type        = string
 }
 
+variable "github_owner_id" {
+  description = "Numeric ID of the GitHub owner, part of the immutable OIDC subject."
+  type        = string
+  default     = "91568541"
+}
+
+variable "github_repo_ids" {
+  description = "Numeric IDs of the repositories allowed to assume the GitHub Actions roles."
+  type        = map(string)
+  default = {
+    realworld-platform = "1441109328"
+    realworld-backend  = "1441109272"
+    realworld-frontend = "1441109299"
+  }
+}
+
 variable "platform_repo" {
   description = "Repository holding Terraform and GitOps code."
   type        = string
