@@ -2,6 +2,8 @@
 environment: ""
 registry: ""
 host: ""
+# VPC CIDR; uvicorn trusts X-Forwarded-For only from these addresses (the ALB).
+trustedProxyCidr: ""
 postgres:
   host: ""
   port: "5432"

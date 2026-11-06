@@ -54,6 +54,7 @@ data "aws_iam_policy_document" "external_secrets" {
     resources = [
       aws_secretsmanager_secret.backend.arn,
       aws_secretsmanager_secret.grafana_admin.arn,
+      aws_secretsmanager_secret.argocd_webhook.arn,
       module.rds.master_user_secret_arn,
     ]
   }
