@@ -1,7 +1,7 @@
 # Image tags deployed to prod. Updated by CI.
 backend:
   image:
-    tag: "55111c6b3354"
+    tag: "921774f5280c"
 frontend:
   image:
     tag: "969709a379b1"
