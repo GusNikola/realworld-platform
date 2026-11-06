@@ -1,2 +1,3 @@
-# host comes from the ArgoCD cluster secret annotations.
+# Both values come from the ArgoCD cluster secret annotations.
 host: ""
+webhookSecretName: ""

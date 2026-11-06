@@ -84,3 +84,22 @@ resource "aws_secretsmanager_secret_version" "grafana_admin" {
   })
   secret_string_wo_version = 1
 }
+
+# Shared secret for the GitHub push webhook of the platform repository. External Secrets
+# merges it into argocd-secret, so the value never passes through Terraform state.
+ephemeral "random_password" "argocd_webhook" {
+  length  = 32
+  special = false
+}
+
+resource "aws_secretsmanager_secret" "argocd_webhook" {
+  name                    = "${local.name}/argocd-webhook"
+  description             = "GitHub webhook secret for ArgoCD, synced into argocd-secret by External Secrets"
+  recovery_window_in_days = 0
+}
+
+resource "aws_secretsmanager_secret_version" "argocd_webhook" {
+  secret_id                = aws_secretsmanager_secret.argocd_webhook.id
+  secret_string_wo         = ephemeral.random_password.argocd_webhook.result
+  secret_string_wo_version = 1
+}

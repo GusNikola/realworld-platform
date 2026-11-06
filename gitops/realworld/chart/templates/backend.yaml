@@ -31,7 +31,15 @@ spec:
           image: {{ include "realworld.image" (list . "backend") }}
           # Bypass the image entrypoint, which runs migrations on every start;
           # migrations run once per sync in the backend-migrate Job instead.
-          command: ["uvicorn", "conduit.app:app", "--host", "0.0.0.0", "--port", "{{ .Values.backend.port }}"]
+          # Trusting X-Forwarded-For from the VPC (the ALB) gives the app the real client
+          # address; without it every request appears to come from an ALB node and the
+          # per-IP rate limiter is shared by all users and the ALB health checks.
+          command:
+            - uvicorn
+            - conduit.app:app
+            - --host=0.0.0.0
+            - --port={{ .Values.backend.port }}
+            - --forwarded-allow-ips={{ required "trustedProxyCidr is required" .Values.trustedProxyCidr }}
           ports:
             - name: http
               containerPort: {{ .Values.backend.port }}

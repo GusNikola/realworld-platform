@@ -30,6 +30,7 @@ spec:
               - values-{{ .metadata.labels.environment }}.yaml
             valuesObject:
               host: "{{ .metadata.annotations.argocd_host }}"
+              webhookSecretName: "{{ .metadata.annotations.argocd_webhook_secret_name }}"
       destination:
         server: "{{ .server }}"
         namespace: argocd

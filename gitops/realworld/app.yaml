@@ -31,6 +31,7 @@ spec:
               environment: "{{ .metadata.labels.environment }}"
               registry: "{{ .metadata.annotations.ecr_registry }}"
               host: "{{ .metadata.annotations.app_host }}"
+              trustedProxyCidr: "{{ .metadata.annotations.vpc_cidr }}"
               postgres:
                 host: "{{ .metadata.annotations.rds_address }}"
                 port: "{{ .metadata.annotations.rds_port }}"

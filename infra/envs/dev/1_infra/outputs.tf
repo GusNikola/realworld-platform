@@ -2,6 +2,10 @@ output "vpc_id" {
   value = local.network.vpc_id
 }
 
+output "vpc_cidr" {
+  value = local.network.vpc_cidr
+}
+
 output "cluster_name" {
   value = module.eks.cluster_name
 }
@@ -76,6 +80,10 @@ output "argocd_admin_bcrypt_secret_name" {
 
 output "grafana_admin_secret_name" {
   value = aws_secretsmanager_secret.grafana_admin.name
+}
+
+output "argocd_webhook_secret_name" {
+  value = aws_secretsmanager_secret.argocd_webhook.name
 }
 
 output "waf_web_acl_arn" {

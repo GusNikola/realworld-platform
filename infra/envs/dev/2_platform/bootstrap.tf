@@ -16,6 +16,7 @@ resource "kubernetes_secret_v1" "in_cluster" {
       aws_account_id = data.aws_caller_identity.current.account_id
       cluster_name   = local.infra.cluster_name
       vpc_id         = local.infra.vpc_id
+      vpc_cidr       = local.infra.vpc_cidr
 
       domain         = local.domain
       app_host       = local.app_host
@@ -37,12 +38,13 @@ resource "kubernetes_secret_v1" "in_cluster" {
       loki_role_arn             = local.infra.irsa_role_arns.loki
       loki_bucket               = local.infra.loki_bucket
 
-      rds_address               = local.infra.rds_address
-      rds_port                  = tostring(local.infra.rds_port)
-      rds_db_name               = local.infra.rds_db_name
-      rds_secret_arn            = local.infra.rds_master_user_secret_arn
-      backend_secret_name       = local.infra.backend_secret_name
-      grafana_admin_secret_name = local.infra.grafana_admin_secret_name
+      rds_address                = local.infra.rds_address
+      rds_port                   = tostring(local.infra.rds_port)
+      rds_db_name                = local.infra.rds_db_name
+      rds_secret_arn             = local.infra.rds_master_user_secret_arn
+      backend_secret_name        = local.infra.backend_secret_name
+      grafana_admin_secret_name  = local.infra.grafana_admin_secret_name
+      argocd_webhook_secret_name = local.infra.argocd_webhook_secret_name
 
       ecr_registry    = "${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com"
       gitops_repo_url = local.gitops_repo_url
