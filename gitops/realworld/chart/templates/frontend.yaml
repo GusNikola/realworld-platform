@@ -28,6 +28,12 @@ spec:
         # The upstream nginx image runs as root on port 80.
         - name: frontend
           image: {{ include "realworld.image" (list . "frontend") }}
+          # Keep serving while the ALB deregisters the pod; the target stops getting
+          # new requests a few seconds after the pod starts terminating.
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 15
           ports:
             - name: http
               containerPort: {{ .Values.frontend.port }}
