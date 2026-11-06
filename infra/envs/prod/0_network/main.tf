@@ -4,7 +4,8 @@ locals {
 
 data "aws_caller_identity" "current" {}
 
-# Only allow reading this environment's secrets and the RDS-managed master secret through the endpoint.
+# Workloads may only read this environment's secrets and the RDS-managed master secret
+# through the endpoint; the Terraform CI roles may also manage secrets.
 data "aws_iam_policy_document" "secretsmanager_endpoint" {
   statement {
     actions = [
@@ -25,6 +26,28 @@ data "aws_iam_policy_document" "secretsmanager_endpoint" {
       test     = "StringEquals"
       variable = "aws:PrincipalAccount"
       values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+
+  # Terraform runs on the self-hosted runner inside the VPC, so its Secrets Manager
+  # calls go through this endpoint too. The CI roles may manage secrets here; their
+  # IAM policies still apply (the plan role stays read-only).
+  statement {
+    actions   = ["secretsmanager:*"]
+    resources = ["*"]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:PrincipalArn"
+      values = [
+        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/realworld-bootstrap-gha-terraform-plan",
+        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/realworld-bootstrap-gha-terraform-apply",
+      ]
     }
   }
 }
