@@ -40,12 +40,33 @@ spec:
       destination:
         server: "{{ .server }}"
         namespace: kube-system
+      # The chart generates a new self-signed webhook certificate on every render, and
+      # ArgoCD renders again for every new commit. Keeping the live certificate and CA
+      # bundle avoids a window where the webhook serves a certificate the API server
+      # does not trust, which blocks target registration during rollouts.
+      ignoreDifferences:
+        - group: admissionregistration.k8s.io
+          kind: MutatingWebhookConfiguration
+          name: aws-load-balancer-webhook
+          jqPathExpressions:
+            - .webhooks[].clientConfig.caBundle
+        - group: admissionregistration.k8s.io
+          kind: ValidatingWebhookConfiguration
+          name: aws-load-balancer-webhook
+          jqPathExpressions:
+            - .webhooks[].clientConfig.caBundle
+        - kind: Secret
+          name: aws-load-balancer-tls
+          namespace: kube-system
+          jsonPointers:
+            - /data
       syncPolicy:
         automated:
           prune: true
           selfHeal: true
         syncOptions:
           - ServerSideApply=true
+          - RespectIgnoreDifferences=true
         retry:
           limit: 10
           backoff:
