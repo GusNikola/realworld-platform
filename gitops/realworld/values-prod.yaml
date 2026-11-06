@@ -4,4 +4,4 @@ backend:
     tag: "921774f5280c"
 frontend:
   image:
-    tag: "401b57c75a6a"
+    tag: "d33862c39f58"
