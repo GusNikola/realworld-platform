@@ -1,0 +1,4 @@
+self-hosted-runner:
+  # Label of the runner on the ops host inside the prod VPC.
+  labels:
+    - prod-vpc

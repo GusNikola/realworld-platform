@@ -49,6 +49,12 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        # LBC injects a readiness gate into pods of labelled namespaces: a new pod only
+        # counts as ready once the ALB reports it healthy, so a rollout never removes
+        # the old pods before the ALB can route to the new ones.
+        managedNamespaceMetadata:
+          labels:
+            elbv2.k8s.aws/pod-readiness-gate-inject: enabled
         syncOptions:
           - CreateNamespace=true
           - ServerSideApply=true

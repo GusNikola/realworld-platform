@@ -1,0 +1,135 @@
+name: Terraform
+
+on:
+  pull_request:
+    branches: [main]
+  # Only infrastructure changes reach AWS; gitops/ changes (including the image tag
+  # commits from the app pipelines) are applied by ArgoCD.
+  push:
+    branches: [main]
+    paths:
+      - infra/envs/prod/**
+      - infra/modules/**
+      - .github/workflows/terraform.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TF_VERSION: 1.16.7
+  HELM_VERSION: v3.19.4
+  AWS_REGION: us-east-1
+  PLAN_ROLE_ARN: arn:aws:iam::973122996566:role/realworld-bootstrap-gha-terraform-plan
+  APPLY_ROLE_ARN: arn:aws:iam::973122996566:role/realworld-bootstrap-gha-terraform-apply
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+jobs:
+  # Static checks run on GitHub-hosted runners without AWS access, so pull requests,
+  # including ones from forks, never reach the cloud or the self-hosted runner.
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      - name: Format
+        run: terraform fmt -check -recursive infra/modules infra/envs
+      - name: Validate every layer
+        run: |
+          for dir in infra/envs/*/*/; do
+            echo "== $dir"
+            terraform -chdir="$dir" init -backend=false >/dev/null
+            terraform -chdir="$dir" validate -no-color
+          done
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: ${{ env.HELM_VERSION }}
+      - name: Render GitOps charts
+        run: .github/scripts/render-charts.sh
+
+  # Read-only plan of the AWS layers, visible before the apply is approved.
+  # 2_platform is planned in the apply job: it reads the ArgoCD admin hash from
+  # Secrets Manager and talks to the cluster, which the read-only role cannot do.
+  plan:
+    needs: validate
+    if: github.event_name != 'pull_request'
+    runs-on: [self-hosted, linux, prod-vpc]
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TF_PLUGIN_CACHE_DIR: /home/runner/.terraform.d/plugin-cache
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ env.PLAN_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Plan 0_network and 1_infra
+        run: |
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          for layer in 0_network 1_infra; do
+            dir="infra/envs/prod/$layer"
+            echo "::group::$layer"
+            terraform -chdir="$dir" init >/dev/null
+            # The plan role cannot write the state lock.
+            terraform -chdir="$dir" plan -lock=false -no-color
+            echo "::endgroup::"
+          done
+
+  apply:
+    needs: plan
+    runs-on: [self-hosted, linux, prod-vpc]
+    # Required reviewers on the prod environment gate this job.
+    environment: prod
+    concurrency:
+      group: terraform-apply-prod
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TF_PLUGIN_CACHE_DIR: /home/runner/.terraform.d/plugin-cache
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ env.APPLY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Plan and apply each layer in order
+        run: |
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          for layer in 0_network 1_infra 2_platform; do
+            dir="infra/envs/prod/$layer"
+            echo "::group::$layer plan"
+            terraform -chdir="$dir" init >/dev/null
+            set +e
+            terraform -chdir="$dir" plan -no-color -detailed-exitcode -out=tfplan
+            code=$?
+            set -e
+            echo "::endgroup::"
+            case $code in
+              0) echo "$layer: no changes" ;;
+              2) terraform -chdir="$dir" apply -no-color tfplan ;;
+              *) exit "$code" ;;
+            esac
+            rm -f "$dir/tfplan"
+          done
